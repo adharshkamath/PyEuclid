@@ -67,57 +67,5 @@ class Area(AbstractGeometricObject):
     
 
 
-class ConstructionRuleType(Enum):
-    DISTINCT = (ConstructionRules.pointDistinct, "distinct")
-    ON = (ConstructionRules.on, "on",)
-    BETWEEN = (ConstructionRules.between, "between")
-    INTERSECTION = (ConstructionRules.intersect, "intersection")
-    def __init__(self, pMethod, pKeyWord):
-        self.method = pMethod
-        self.rulename = pKeyWord
-    def rulename(self):
-        return self.rulename
-    def __method(self):
-        return self.method
-
-class ConstructionRules(object):
-    
-    def distinct(solver, diagram, geometric_object):  # @NoSelf
-        '''
-        [x is distinct from]
-        REQUIRES: true
-        ENSURES: [x is distinct from ...]
-        :param solver:
-        :param diagram:
-        :param geometric_object: a geometric object
-        '''
-        return (False, diagram)
-    
-    def on(solver, diagram, geometric_object1, geometric_object2):  # @NoSelf
-        '''
-        [a is on b]
-        REQUIRES: b is distinct
-        ENSURES: a is distinct and on b
-        '''
-        
-        ## TODO: check type of geometric_object
-        return (False, diagram)
-    
-    def between(self, diagram, geometric_object1, geometric_object_2, geometric_object_3):
-        '''
-        [b is between a and c
-        REQUIRES:
-        ENSURES:
-        '''
-        return (False, diagram)
-    
-    def intersection(self, diagram, geometric_object1, geometric_object2):
-        '''
-        blah
-        REQUIRES:
-        ENSURES:
-        '''
-        return (False, diagram)
-        
         
 
