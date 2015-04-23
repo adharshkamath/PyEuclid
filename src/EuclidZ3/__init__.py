@@ -262,8 +262,67 @@ def testLinesAndCircles():
     alpha.centerThrough(a, b)
     print str(alpha)
     
+def testIntersections():
+    print "=== testIntersections ==="
+    print ">let a be the intersection of L and M"
+    a = Point("a")
+    L = Line("L")
+    M = Line("M")
+    a.intersectsLines(L, M)
+    print str(a)
     
-
+    print ">let a be a point of intersection of circle alpha and line L"
+    a = Point("a")
+    L = Line("L")
+    alpha = Circle("alpha")
+    a.intersectsCircleLine(alpha, L)
+    print str(a)
+    
+    print ">let a and b be the two points of intersection of circle alpha and line L"
+    ## TODO: check with avigad
+    a = Point("a")
+    b = Point("b")
+    L = Line("L")
+    alpha = Circle("alpha")
+    a.intersectsCircleLine(alpha, L)
+    b.intersectsCircleLine(alpha, L)
+    print str(a)
+    print str(b)
+    
+    print ">let a be the point of intersection of L and circle alpha between b and c."
+    a = Point("a")
+    b = Point("b")
+    c = Point("c")
+    alpha = Circle("alpha")
+    L = Line("L")
+    a.intersectsCircleLine(alpha, L)
+    a.between(b, c)
+    print a
+    
+    print ">let a be the point of intersection of L and circle alpha extending the segment from c to b"
+    ## TODO: ask avigad for picture
+    
+    print ">let a be a point on the intersection of alpha and beta"
+    a = Point("a")
+    alpha = Circle("alpha")
+    beta = Circle("beta")
+    a.intersectsCircleCircle(alpha,beta)
+    print a
+    
+    print ">let a and b be the two points of intersection of alpha and beta"
+    ## TODO: is this what avigad has in mind? Is what matters the prereqs and conclusions?
+    a = Point("a")
+    b = Point("b")
+    alpha = Circle("alpha")
+    beta = Circle("beta")
+    a.intersectsCircleCircle(alpha, beta)
+    b.intersectsCircleCircle(alpha, beta)
+    print str(a)
+    print str(b)
+    
+    
+    
+    
     
        
 if __name__ == '__main__':
@@ -271,7 +330,7 @@ if __name__ == '__main__':
 #     test1()
     testPointConstructions()
     testLinesAndCircles()
-    
+    testIntersections()
     
     
     

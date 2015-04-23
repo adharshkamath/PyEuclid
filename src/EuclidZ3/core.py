@@ -153,12 +153,29 @@ class Point(object):
         self.conclusions.append(Not(language.SameSide(self.z3Expr, point.z3Expr, line.z3Expr)))
         self.conclusions.append(Not(language.OnLine(self.z3Expr, line.z3Expr)))
         
-    def inside(self, circle):
+    def inside(self, circle):        
         self.conclusions.append(language.Inside(self.z3Expr, circle.z3Expr))           
                   
     def outside(self, circle):
         self.conclusions.append(Not(language.Inside(self.z3Expr, circle.z3Expr)))
     
+    def intersectsLines(self, line1, line2):
+        ## TODO: make these functions take lists of objects too
+        self.prereqs.append(language.Intersectsll(line1.z3Expr, line2.z3Expr))
+        self.conclusions.append(language.OnLine(self.z3Expr, line1.z3Expr))
+        self.conclusions.append(language.OnLine(self.z3Expr, line2.z3Expr))
+    
+    def intersectsCircleLine(self, circle, line):
+        self.prereqs.append(language.Intersectslc(line.z3Expr, circle.z3Expr))
+        self.conclusions.append(language.OnCircle(self.z3Expr, circle.z3Expr))
+        self.conclusions.append(language.OnLine(self.z3Expr, line.z3Expr))
+
+    def intersectsCircleCircle(self, circle1, circle2):
+        self.prereqs.append(language.Intersectscc(circle1.z3Expr, circle2.z3Expr))
+        self.conclusions.append(language.OnCircle(self.z3Expr, circle1.z3Expr ))
+        self.conclusions.append(language.OnCircle(self.z3Expr, circle2.z3Expr))
+        
+
 
 class Line(object):
     
