@@ -1,6 +1,6 @@
 from z3 import Solver, DeclareSort, Function, BoolSort, RealSort, Const, Consts, \
     ForAll, And, eq, Not, Implies, Or, RealVal, Context, Distinct, simplify, \
-    ExprRef
+    ExprRef, is_const
 import sets
 
 class Proofchecker(object):
@@ -19,21 +19,29 @@ class Proofchecker(object):
         self.lines = dict()
         self.circles = dict()
         self.assumptions = []
-        self.conclusions = []           
+        self.conclusions = []  
+        
+    def hence(self, expr):
+        print self.solver.check(expr)         
         
     def Construct(self, obj):
-        prereqCheck = True
+        
+        self.solver.push()
         for prereq in obj.prereqs:
-            prereqCheck = boolFromSolverCheck(self.solver.check(simplify(prereq, blast_distinct=True)))
-            if prereqCheck == False:
+            self.solver.add(prereq)
+            print prereq
+            prereqCheck = self.solver.check()
+            
+            if str(prereqCheck) != 'sat':
                 print "ProofCheck >> Construction Failed - Could not meet: " + str(prereq) 
+                self.solver.pop()
                 return False
             
         if len(obj.prereqs) > 0:
-            self.assumptions.append(obj.prereqs)
+            self.assumptions.extend(obj.prereqs)
             
         for conclusion in obj.conclusions:
-            self.solver.add(conclusion)
+            self.solver.add(simplify(conclusion, blast_distinct=True))
             self.conclusions.append(conclusion)
         
         if isinstance(obj, Point):
@@ -43,6 +51,7 @@ class Proofchecker(object):
         elif isinstance(obj, Circle):
             self.circles[obj.label] = obj
             
+        self.solver.pop()
         return True
     
             
@@ -186,6 +195,9 @@ class Line(object):
 
     
     def through(self, point1, point2):
+        ## TODO: there is a problem with equality statements like this
+        ## z3 complains that: "warning: an assumption must be a propositional
+        ## variable or the negation of one. I've tried equality == and 'is'
         self.prereqs.append(Not(point1.z3Expr == point2.z3Expr))
         self.conclusions.append(language.OnLine(point1.z3Expr, self.z3Expr))
         self.conclusions.append(language.OnLine(point2.z3Expr, self.z3Expr))

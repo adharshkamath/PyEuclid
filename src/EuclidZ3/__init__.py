@@ -1,4 +1,4 @@
-from z3 import Solver, Consts, Not, eq, Distinct, simplify, is_const
+from z3 import Solver, Consts, Not, eq, Distinct, simplify, is_const, Exists
 from EuclidZ3.core import *
  
 
@@ -336,23 +336,36 @@ def testProofCheckerConstruction():
     print ">let b be a distinct point"
     b = Point("b")
     pc.Construct(b)
-    print ">let L be a distinct line"
+    print ">let L be a distinct line through a and b"
     L = Line("L")
+    L.through(a,b)
     pc.Construct(L)
     print ">after constructions"
     print pc.status()
-    
 
+def testZ3Distinctness():
     
+    s = Solver()
+    x, y = Consts('x y', language.PointSort)
+    s.add(Distinct(x))   
+    s.add(Distinct(y))
+    print s
+#     print s.add(Not(eq(x,y)))
+#     print eq(simplify(x),simplify(y))
+#     s.add(eq(x,y))
+    s.add(Not(eq(x,y)))
+    print s.check()
+    print s
          
 
 
 if __name__ == '__main__':
     print "\n=== Running Tests for EuclidZ3 ==="
 #     test1()
-    testPointConstructions()
+#     testZ3Distinctness()
+#     testPointConstructions()
     testLinesAndCircles()
-    testIntersections()
+#     testIntersections()
     testProofCheckerConstruction()
     
     
