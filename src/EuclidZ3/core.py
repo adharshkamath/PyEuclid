@@ -3,251 +3,10 @@ from z3 import Solver, DeclareSort, Function, BoolSort, RealSort, Const, Consts,
     ExprRef, is_const
 import sets
 
-class Proofchecker(object):
-    '''
-    classdocs
-    '''
-
-    def __init__(self):
-        '''
-        Constructor
-        '''           
-        print "=== Initializing proof checker ==="
-        self.language = language
-        self.solver = language.solver
-        self.points = dict()
-        self.lines = dict()
-        self.circles = dict()
-        self.assumptions = []
-        self.conclusions = []  
-        
-    def hence(self, expr):
-        self.solver.push()
-        self.solver.add(expr)
-        result = self.solver.check()
-        if str(result) != 'sat':
-            print "ProofCheck >> Does not follow : " + str(expr)
-            self.solver.pop()
-            return False
-        
-        self.conclusions.append(expr)
-        self.solver.pop()
-        self.solver.add(expr)
-        return True         
-        
-    def construct(self, obj):
-        
-        self.solver.push()
-        for prereq in obj.prereqs:
-            self.solver.add(simplify(prereq, blast_distinct = True))
-            prereqCheck = self.solver.check()
-            if str(prereqCheck) != 'sat':
-                print "ProofCheck >> Construction Failed - Could not meet: " + str(prereq) 
-                self.solver.pop()
-                return False
-            
-        if len(obj.prereqs) > 0:
-            self.assumptions.extend(obj.prereqs)
-            
-        for conclusion in obj.conclusions:
-            self.solver.add(simplify(conclusion, blast_distinct=True))
-            self.conclusions.append(conclusion)
-        
-        if isinstance(obj, Point):
-            self.points[obj.label] = obj
-        elif isinstance(obj, Line):
-            self.lines[obj.label] = obj
-        elif isinstance(obj, Circle):
-            self.circles[obj.label] = obj
-            
-        self.solver.pop()
-        self.solver.add(obj.prereqs)
-        self.solver.add(obj.conclusions)
-        return True
-    
-            
-    
-    def status(self):
-        return "~~~~~   \n" + \
-        "pts: " + str(self.points.keys()) + "\n" + \
-        "lines: " + str(self.lines.keys()) + "\n" + \
-        "circles: " + str(self.circles.keys()) + "\n" + \
-        "~\n" + \
-        "assumptions: " + str(self.assumptions) + "\n" + \
-        "conclusions: " + str(self.conclusions) + "\n~~~~~"
-        
-    
-
-class Theorem(object):
-    '''
-        This is a theorem in the language E.
-    '''
-    def __init__(self):
-        self.assumedObjects = []
-        self.assumedProperties = []
-        self.desiredObjects = []
-        self.desiredConclusions = sets.Set()
-    
-    
-    def proclusTerm(self):
-        if len(self.desiredObjects) == 0:
-            return "Proclus Theorem"
-        return "Proclus Problem"
-    
-    def __str__(self):
-        return str(self.assumedObjects) + ", "\
-             + str(self.assumedProperties) + \
-             " ==> " + str(self.desiredObjects) + \
-             ", " + str(self.desiredConclusions)
-    
-    
-class Point(object):
-    
-    '''
-    This class represents a Point in a euclidean proof.
-    It is a wrapper for the PointSort and the various
-    functions operating on it, as defined in 
-    LanguageE.
-    
-    Once all desired properties are applied to this Point
-    you can call this Point's construct method. 
-    '''
-    
-    def __init__(self, label, isDistinct=True):
-        '''
-        Point constructor. Label should be 1 or so characters with
-        no spaces, e.g. 'p' . You can construct multiple points
-        with the same constraints but different labels if the
-        label has the for 'p q r' . 
-        
-        For example, Point('p q r') represents 3 distinct points
-        '''
-        self.label = label
-        self.isDistinct = isDistinct  
-        self.prereqs = []
-        self.conclusions = []
-        self.z3Expr = Const(label, language.PointSort)
-        if self.isDistinct:
-            self.conclusions.append(Distinct(self.z3Expr))
-    
-    def __eq__(self, other):
-        return self.z3Expr == other.z3Expr
-    
-    
-    def __str__(self, *args, **kwargs):
-        return "|Point [" + str(self.z3Expr) + "] :\n" +\
-                "|   prereq: " + str(self.prereqs) + "\n" + \
-                "|   concls: " + str(self.conclusions) + "\n"
-    
-    def onLine(self, line):
-        self.prereqs.append(Distinct(line.z3Expr))
-        self.conclusions.append(language.OnLine(self.z3Expr, line.z3Expr))
-        
-    def onCircle(self, circle):
-        self.prereqs.append(Distinct(circle.z3Expr))
-        self.conclusions.append(language.OnCircle(self.z3Expr, circle.z3Expr))
-    
-    def between(self, point1, point2):
-        self.prereqs.append(Not(point1.z3Expr == point2.z3Expr))   
-        self.conclusions.append(language.Between(point1.z3Expr, self.z3Expr, point2.z3Expr))
-    
-    def sameside(self, point, line):
-        self.prereqs.append(Not(language.OnLine(point.z3Expr, line.z3Expr)))
-        self.conclusions.append(language.SameSide(self.z3Expr, point.z3Expr, line.z3Expr))
-        
-    def opposite(self, point, line):
-        self.prereqs.append(Not(language.OnLine(point.z3Expr, line.z3Expr)))
-        self.conclusions.append(Not(language.SameSide(self.z3Expr, point.z3Expr, line.z3Expr)))
-        self.conclusions.append(Not(language.OnLine(self.z3Expr, line.z3Expr)))
-        
-    def inside(self, circle):        
-        self.conclusions.append(language.Inside(self.z3Expr, circle.z3Expr))           
-                  
-    def outside(self, circle):
-        self.conclusions.append(Not(language.Inside(self.z3Expr, circle.z3Expr)))
-    
-    def intersectsLines(self, line1, line2):
-        ## TODO: make these functions take lists of objects too
-        self.prereqs.append(language.Intersectsll(line1.z3Expr, line2.z3Expr))
-        self.conclusions.append(language.OnLine(self.z3Expr, line1.z3Expr))
-        self.conclusions.append(language.OnLine(self.z3Expr, line2.z3Expr))
-    
-    def intersectsCircleLine(self, circle, line):
-        self.prereqs.append(language.Intersectslc(line.z3Expr, circle.z3Expr))
-        self.conclusions.append(language.OnCircle(self.z3Expr, circle.z3Expr))
-        self.conclusions.append(language.OnLine(self.z3Expr, line.z3Expr))
-
-    def intersectsCircleCircle(self, circle1, circle2):
-        self.prereqs.append(language.Intersectscc(circle1.z3Expr, circle2.z3Expr))
-        self.conclusions.append(language.OnCircle(self.z3Expr, circle1.z3Expr ))
-        self.conclusions.append(language.OnCircle(self.z3Expr, circle2.z3Expr))
-        
-
-
-class Line(object):
-    
-    '''
-    Line constructor. 
-    '''
-    def __init__(self, label, isDistinct=True):
-        self.label = label
-        self.isDistinct = isDistinct  
-        self.prereqs = []
-        self.conclusions = []
-        self.z3Expr = Const(label, language.LineSort)
-        if self.isDistinct:
-            self.conclusions.append(Distinct(self.z3Expr))
-    
-    def __eq__(self, other):
-        return self.z3Expr == other.z3Expr
-       
-    def __str__(self, *args, **kwargs):
-        return "|Line [" + str(self.z3Expr) + "] :\n" +\
-                "|   prereq: " + str(self.prereqs) + "\n" + \
-                "|   concls: " + str(self.conclusions) + "\n"
-
-    
-    def through(self, point1, point2):
-        ## TODO: there is a problem with equality statements like this
-        ## z3 complains that: "warning: an assumption must be a propositional
-        ## variable or the negation of one. I've tried equality == and 'is'
-        self.prereqs.append(Not(point1.z3Expr == point2.z3Expr))
-        self.conclusions.append(language.OnLine(point1.z3Expr, self.z3Expr))
-        self.conclusions.append(language.OnLine(point2.z3Expr, self.z3Expr))
-    
-    
-
-class Circle(object):
-    
-    '''
-    Circle constructor. 
-    '''
-    def __init__(self, label, isDistinct=True):
-        self.label = label
-        self.isDistinct = isDistinct  
-        self.prereqs = []
-        self.conclusions = []
-        self.z3Expr = Const(label, language.CircleSort)
-        if self.isDistinct:
-            self.conclusions.append(Distinct(self.z3Expr))
-    
-    
-    def __str__(self, *args, **kwargs):
-        return "|Circle [" + str(self.z3Expr) + "] :\n" +\
-                "|   prereq: " + str(self.prereqs) + "\n" + \
-                "|   concls: " + str(self.conclusions) + "\n"
-    
-    
-    def centerThrough(self, point1, point2):
-        self.prereqs.append(Not(point1.z3Expr == point2.z3Expr))
-        self.conclusions.append(language.Center(point1.z3Expr, self.z3Expr))
-        self.conclusions.append(language.OnCircle(point2.z3Expr, self.z3Expr))
-        
-
 
 class LanguageE(object):
     '''   
- .@author: krojas
+ @author: krojas
  
   ==============
   The language of E
@@ -714,6 +473,342 @@ class LanguageE(object):
         self.solver.add(self.axioms)
         
         print "Axiom set : " + str(self.solver.check())
+
+class Proof(object):
+    '''
+    Proof class provides an interface with z3 for
+    checking Euclidean proofs in the language E.
+    
+    Its keeps tracks of objects created, assumptions, and conclusions.
+    It can carry out construction of GeometricObjects
+    '''
+
+    def __init__(self):
+        '''
+        Constructor
+        '''           
+        print "=== Initializing proof checker ==="
+        self.language = language
+        self.solver = language.solver
+        self.points = dict()
+        self.lines = dict()
+        self.circles = dict()
+        ## TODO: make constructableobjects and expression hashable so they
+        ## can be stored in a set instead of a list. Increase performance,
+        ## remove annoying duplicates.
+        self.assumptions = []
+        self.conclusions = []  
+    
+    def point(self,point):
+        '''
+        returns the constructable object with specified label.
+        '''
+        result = self.points.get(point)
+        if result == None:
+            print "ProofCheck >> No such point constructed"
+            return None
+        return result   
+    
+    def hence(self, expr):
+        '''
+        Checks if expression follows from facts and axioms.
+        if so, the expression is made explicit
+        '''
+        self.solver.push()
+        self.solver.add(expr)
+        result = self.solver.check()
+        if str(result) != 'sat':
+            print "ProofCheck >> Does not follow : " + str(expr)
+            self.solver.pop()
+            return False
+        
+        self.conclusions.append(expr)
+        self.solver.pop()
+        self.solver.add(expr)
+        return True         
+        
+    def construct(self, obj):
+        '''
+        Takes in a ConstructableObject with preconditions
+        and postconditions. Checks that preconditions hold
+        in the proof context and if so, asserts the post-conditions.
+        '''
+        self.solver.push()
+        for prereq in obj.prereqs:
+            self.solver.add(simplify(prereq, blast_distinct = True))
+            prereqCheck = self.solver.check()
+            if str(prereqCheck) != 'sat':
+                print "ProofCheck >> Construction Failed - Could not meet: " + str(prereq) 
+                self.solver.pop()
+                return False
+            
+        if len(obj.prereqs) > 0:
+            self.assumptions.extend(obj.prereqs)
+            
+        for conclusion in obj.conclusions:
+            self.solver.add(simplify(conclusion, blast_distinct=True))
+            self.conclusions.append(conclusion)
+        
+        if isinstance(obj, Point):
+            self.points[obj.label] = obj
+        elif isinstance(obj, Line):
+            self.lines[obj.label] = obj
+        elif isinstance(obj, Circle):
+            self.circles[obj.label] = obj
+            
+        self.solver.pop()
+        self.solver.add(obj.prereqs)
+        self.solver.add(obj.conclusions)
+        return True
+    
+            
+    
+    def status(self):
+        '''
+        Returns a string representing this proof's status.
+        '''
+        ## TODO: should display theorems and goals
+        return "~~~~~   \n" + \
+        "pts: " + str(self.points.keys()) + "\n" + \
+        "lines: " + str(self.lines.keys()) + "\n" + \
+        "circles: " + str(self.circles.keys()) + "\n" + \
+        "~\n" + \
+        "assumptions: " + str(self.assumptions) + "\n" + \
+        "conclusions: " + str(self.conclusions) + "\n~~~~~"
+     
+    def __str__(self, *args, **kwargs):
+        return self.status()   
+    
+
+class Theorem(object):
+    '''
+        This is a theorem in the language E.
+    '''
+    ## TODO: overhaul this entire class. 
+    ## it should work like a MultiplyLinkedList, one theorem is a justification
+    ## for others. This is where non-linear deduction gets support
+    def __init__(self):
+        self.assumedObjects = []
+        self.assumedProperties = []
+        self.desiredObjects = []
+        self.desiredConclusions = []
+    
+    
+    def proclusTerm(self):
+        if len(self.desiredObjects) == 0:
+            return "Proclus Theorem"
+        return "Proclus Problem"
+    
+    def __str__(self):
+        return str(self.assumedObjects) + ", "\
+             + str(self.assumedProperties) + \
+             " ==> " + str(self.desiredObjects) + \
+             ", " + str(self.desiredConclusions)
+    
+    
+## TODO: create AbstractConstructableObject class to provide Template methods
+## for Point, Line, Circle
+class Point(object):
+    
+    '''
+    This class represents a Point in a euclidean proof.
+    It is a wrapper for the PointSort and the various
+    functions operating on it, as defined in 
+    LanguageE.
+    
+    Once all desired properties are applied to this Point
+    you can call this Point's construct method. 
+    '''
+    
+    def __init__(self, label, isDistinct=True):
+        '''
+        Point constructor. Label should be 1 or so characters with
+        no spaces, e.g. 'p' . You can construct multiple points
+        with the same constraints but different labels if the
+        label has the for 'p q r' . 
+        
+        For example, Point('p q r') represents 3 distinct points
+        '''
+        self.label = label
+        self.isDistinct = isDistinct  
+        self.prereqs = []
+        self.conclusions = []
+        self.z3Expr = Const(label, language.PointSort)
+        if self.isDistinct:
+            self.conclusions.append(Distinct(self.z3Expr))
+    
+    def __eq__(self, other):
+        '''
+        returns the equality of the z3 expressions representing
+        the objects being compared
+        '''
+        if not isinstance(other, Point):
+            return False
+        return self.z3Expr == other.z3Expr
+    
+    
+    
+    
+    def __str__(self, *args, **kwargs):
+        return "|Point [" + str(self.z3Expr) + "] :\n" +\
+                "|   prereq: " + str(self.prereqs) + "\n" + \
+                "|   concls: " + str(self.conclusions) + "\n"
+    
+    def onLine(self, line):
+        '''
+        specify construction should place point on line
+        '''
+        self.prereqs.append(Distinct(line.z3Expr))
+        self.conclusions.append(language.OnLine(self.z3Expr, line.z3Expr))
+        
+    def onCircle(self, circle):
+        '''
+        Specify construction should place point on circle
+        '''
+        self.prereqs.append(Distinct(circle.z3Expr))
+        self.conclusions.append(language.OnCircle(self.z3Expr, circle.z3Expr))
+    
+    def between(self, point1, point2):
+        '''
+        Specify construction should place this point between point1 and point2
+        '''
+        self.prereqs.append(Not(point1.z3Expr == point2.z3Expr))   
+        self.conclusions.append(language.Between(point1.z3Expr, self.z3Expr, point2.z3Expr))
+    
+    def sameside(self, point, line):
+        '''
+        Specify this construction should place this point on sameside of line 
+        as another point
+        '''
+        self.prereqs.append(Not(language.OnLine(point.z3Expr, line.z3Expr)))
+        self.conclusions.append(language.SameSide(self.z3Expr, point.z3Expr, line.z3Expr))
+        
+    def opposite(self, point, line):
+        '''
+        Specify this construction should place this point opposite of line
+        '''
+        self.prereqs.append(Not(language.OnLine(point.z3Expr, line.z3Expr)))
+        self.conclusions.append(Not(language.SameSide(self.z3Expr, point.z3Expr, line.z3Expr)))
+        self.conclusions.append(Not(language.OnLine(self.z3Expr, line.z3Expr)))
+        
+    def inside(self, circle):      
+        '''
+        Specify this construction should plae this point inside circle
+        '''  
+        self.conclusions.append(language.Inside(self.z3Expr, circle.z3Expr))           
+                  
+    def outside(self, circle):
+        '''
+        Specify this construction should place this point outside circle
+        '''
+        self.conclusions.append(Not(language.Inside(self.z3Expr, circle.z3Expr)))
+    
+    def intersectsLines(self, line1, line2):
+        '''
+        Specify this construction should place this point on intersection of 
+        lines
+        '''
+        ## TODO: make these functions take lists of objects too
+        self.prereqs.append(language.Intersectsll(line1.z3Expr, line2.z3Expr))
+        self.conclusions.append(language.OnLine(self.z3Expr, line1.z3Expr))
+        self.conclusions.append(language.OnLine(self.z3Expr, line2.z3Expr))
+    
+    def intersectsCircleLine(self, circle, line):
+        '''
+        Specify this construction should place this point on intersection
+        of circle and line
+        '''
+        self.prereqs.append(language.Intersectslc(line.z3Expr, circle.z3Expr))
+        self.conclusions.append(language.OnCircle(self.z3Expr, circle.z3Expr))
+        self.conclusions.append(language.OnLine(self.z3Expr, line.z3Expr))
+
+    def intersectsCircleCircle(self, circle1, circle2):
+        '''
+        Specify this construction should place this point on intersection of
+        circle and circle
+        '''
+        self.prereqs.append(language.Intersectscc(circle1.z3Expr, circle2.z3Expr))
+        self.conclusions.append(language.OnCircle(self.z3Expr, circle1.z3Expr ))
+        self.conclusions.append(language.OnCircle(self.z3Expr, circle2.z3Expr))
+        
+
+
+class Line(object):
+    
+    '''
+    Line constructor. 
+    '''
+    def __init__(self, label, isDistinct=True):
+        self.label = label
+        self.isDistinct = isDistinct  
+        self.prereqs = []
+        self.conclusions = []
+        self.z3Expr = Const(label, language.LineSort)
+        if self.isDistinct:
+            self.conclusions.append(Distinct(self.z3Expr))
+    
+    def __eq__(self, other):
+        if not isinstance(other, Line):
+            return False
+        return self.z3Expr == other.z3Expr
+       
+    def __str__(self, *args, **kwargs):
+        return "|Line [" + str(self.z3Expr) + "] :\n" +\
+                "|   prereq: " + str(self.prereqs) + "\n" + \
+                "|   concls: " + str(self.conclusions) + "\n"
+
+    
+    def through(self, point1, point2):
+        '''
+        Specify that this construction should place line through
+        points 1 and 2
+        '''
+        ## TODO: there is a problem with equality statements like this
+        ## z3 complains that: "warning: an assumption must be a propositional
+        ## variable or the negation of one. I've tried equality == and 'is'
+        self.prereqs.append(Not(point1.z3Expr == point2.z3Expr))
+        self.conclusions.append(language.OnLine(point1.z3Expr, self.z3Expr))
+        self.conclusions.append(language.OnLine(point2.z3Expr, self.z3Expr))
+    
+    
+
+class Circle(object):
+    
+    '''
+    Circle constructor. 
+    '''
+    def __init__(self, label, isDistinct=True):
+        self.label = label
+        self.isDistinct = isDistinct  
+        self.prereqs = []
+        self.conclusions = []
+        self.z3Expr = Const(label, language.CircleSort)
+        if self.isDistinct:
+            self.conclusions.append(Distinct(self.z3Expr))
+    
+    def __eq__(self, other):
+        if not isinstance(other, Circle):
+            return False
+        return self.z3Expr == other.z3Expr
+    
+    def __str__(self, *args, **kwargs):
+        return "|Circle [" + str(self.z3Expr) + "] :\n" +\
+                "|   prereq: " + str(self.prereqs) + "\n" + \
+                "|   concls: " + str(self.conclusions) + "\n"
+    
+    
+    def centerThrough(self, point1, point2):
+        '''
+        Specify construction place this circle with center point1
+        and through point2
+        '''
+        self.prereqs.append(Not(point1.z3Expr == point2.z3Expr))
+        self.conclusions.append(language.Center(point1.z3Expr, self.z3Expr))
+        self.conclusions.append(language.OnCircle(point2.z3Expr, self.z3Expr))
+        
+
+
+
         
 
 yesNoFromSolverCheck = lambda x: 'yes' if x == 'sat' else 'no' 

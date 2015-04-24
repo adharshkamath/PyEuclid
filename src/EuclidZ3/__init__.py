@@ -336,7 +336,7 @@ def testProofCheckerConstruction1():
     '''
     print "=== testProofCheckerConstruction1 ==="
     
-    pc = Proofchecker()
+    pc = Proof()
     print "> before construction"
     print pc.status()
     print "> let a be a distinct point"
