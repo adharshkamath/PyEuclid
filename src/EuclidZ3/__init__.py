@@ -241,7 +241,6 @@ def testLinesAndCircles():
     This test checks that construction rules for lines and circles
     list correct pre and post requirements. This test is also an example
     of how to use this framework.
-
     
     Each corresponds to pages 715-717 of "A Formal System For Euclid's Elements"
     by Avigad et al.
@@ -263,6 +262,15 @@ def testLinesAndCircles():
     print str(alpha)
     
 def testIntersections():
+    """
+    This test checks that construction rules for lines and circles
+    list correct pre and post requirements. This test is also an example
+    of how to use this framework.
+    
+    Each corresponds to pages 715-717 of "A Formal System For Euclid's Elements"
+    by Avigad et al.
+    """
+    
     print "=== testIntersections ==="
     print ">let a be the intersection of L and M"
     a = Point("a")
@@ -318,33 +326,54 @@ def testIntersections():
     a.intersectsCircleCircle(alpha, beta)
     b.intersectsCircleCircle(alpha, beta)
     print str(a)
-    print str(b)
-    
-    
-    
-    
-    
+    print str(b)    
        
-def testProofCheckerConstruction():
-    print "=== testProofCheckerConstruction ==="
+def testProofCheckerConstruction1():
+    '''
+    This test works with the proof checker
+    to prove that if some line L and M both go through 2 points
+    a and b, then those two lines are the same.
+    '''
+    print "=== testProofCheckerConstruction1 ==="
+    
     pc = Proofchecker()
-    print ">before construction"
+    print "> before construction"
     print pc.status()
-    print ">let a be a distinct point"
+    print "> let a be a distinct point"
     a = Point("a")
-    pc.Construct(a)
-    print ">let b be a distinct point"
+    pc.construct(a)
+    print "> let b be a distinct point"
     b = Point("b")
-    pc.Construct(b)
-    print ">let L be a distinct line through a and b"
+    pc.construct(b)
+    print "> let L be a distinct line through a and b"
     L = Line("L")
     L.through(a,b)
-    pc.Construct(L)
-    print ">after constructions"
+    pc.construct(L)
+    print "> after constructions"
     print pc.status()
+    print "> hence a == b "
+    pc.hence(a == b)
+    print "> let m be the line through a and b"
+    M = Line("M")
+    M.through(a,b)
+    pc.construct(M)
+    print "> hence M == L"
+    pc.hence(L == M)
+    print pc.status()
+    print "> hence M does not intersect L"
+    ## TODO: make it so that you don't have to type language.*
+    ## and so that functions like Intersectsll can take
+    ## Geometric objects like Line instead of z3expression
+    pc.hence(Not(language.Intersectsll(L.z3Expr,M.z3Expr)))
+    
+    
+    
 
 def testZ3Distinctness():
-    
+    '''
+    This test is simply a playground to explore
+    how z3 handles distinctness and equality checking.
+    '''
     s = Solver()
     x, y = Consts('x y', language.PointSort)
     s.add(Distinct(x))   
@@ -366,7 +395,7 @@ if __name__ == '__main__':
 #     testPointConstructions()
     testLinesAndCircles()
 #     testIntersections()
-    testProofCheckerConstruction()
+    testProofCheckerConstruction1()
     
     
     

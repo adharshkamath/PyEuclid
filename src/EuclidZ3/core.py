@@ -22,16 +22,25 @@ class Proofchecker(object):
         self.conclusions = []  
         
     def hence(self, expr):
-        print self.solver.check(expr)         
+        self.solver.push()
+        self.solver.add(expr)
+        result = self.solver.check()
+        if str(result) != 'sat':
+            print "ProofCheck >> Does not follow : " + str(expr)
+            self.solver.pop()
+            return False
         
-    def Construct(self, obj):
+        self.conclusions.append(expr)
+        self.solver.pop()
+        self.solver.add(expr)
+        return True         
+        
+    def construct(self, obj):
         
         self.solver.push()
         for prereq in obj.prereqs:
-            self.solver.add(prereq)
-            print prereq
+            self.solver.add(simplify(prereq, blast_distinct = True))
             prereqCheck = self.solver.check()
-            
             if str(prereqCheck) != 'sat':
                 print "ProofCheck >> Construction Failed - Could not meet: " + str(prereq) 
                 self.solver.pop()
@@ -52,6 +61,8 @@ class Proofchecker(object):
             self.circles[obj.label] = obj
             
         self.solver.pop()
+        self.solver.add(obj.prereqs)
+        self.solver.add(obj.conclusions)
         return True
     
             
@@ -63,7 +74,7 @@ class Proofchecker(object):
         "circles: " + str(self.circles.keys()) + "\n" + \
         "~\n" + \
         "assumptions: " + str(self.assumptions) + "\n" + \
-        "conclusions: " + str(self.conclusions) + "\n~~~~~   \n"
+        "conclusions: " + str(self.conclusions) + "\n~~~~~"
         
     
 
@@ -119,7 +130,8 @@ class Point(object):
         if self.isDistinct:
             self.conclusions.append(Distinct(self.z3Expr))
     
-    
+    def __eq__(self, other):
+        return self.z3Expr == other.z3Expr
     
     
     def __str__(self, *args, **kwargs):
@@ -186,7 +198,8 @@ class Line(object):
         if self.isDistinct:
             self.conclusions.append(Distinct(self.z3Expr))
     
-    
+    def __eq__(self, other):
+        return self.z3Expr == other.z3Expr
        
     def __str__(self, *args, **kwargs):
         return "|Line [" + str(self.z3Expr) + "] :\n" +\
