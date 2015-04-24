@@ -1,11 +1,15 @@
 # EuclidZ3
 An automated Euclidean proof checker using SMT-solver Z3 (https://github.com/Z3Prover/z3)
 and the Formal Language E (http://tinyurl.com/pbkqm59).
-<\br>
+
 To start working with Euclidean Proofs:
+
 1) make sure z3 is in pythonpath
+
 2) run python in EuclidZ3 folder
+
 3) run "from core import * "
+
 4) create a proof object "pc = Proof()"
 
 Euclidean proofs have construction phases. There are three constructable
