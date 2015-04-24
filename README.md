@@ -20,13 +20,13 @@ b is on the line L.
 
 Example:  To create a line between two points: 
    
-a = Point("a")
+    a = Point("a")
 
-b = Point("b")
+    b = Point("b")
 
-L = Line("L")
+    L = Line("L")
 
-L.through(a,b)
+    L.through(a,b)
 
 Once a constructable object is declared, it can be passed to the Proof class.
 
