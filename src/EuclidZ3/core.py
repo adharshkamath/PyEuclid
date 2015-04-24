@@ -3,58 +3,58 @@ from z3 import Solver, DeclareSort, Function, BoolSort, RealSort, Const, Consts,
     ExprRef
 import sets
 
-class Proof(object):
+class Proofchecker(object):
     '''
     classdocs
     '''
 
-    def __init__(self, language=None):
+    def __init__(self):
         '''
         Constructor
-        '''
-        if (language == None):
-            language = LanguageE()
-            
+        '''           
         print "=== Initializing proof checker ==="
         self.language = language
         self.solver = language.solver
-        self.points = sets.Set()
-        self.lines = sets.Set()
-        self.circles = sets.Set()
-        self.assumptions = sets.Set()
-        self.conclusions = sets.Set()
+        self.points = dict()
+        self.lines = dict()
+        self.circles = dict()
+        self.assumptions = []
+        self.conclusions = []           
         
     def Construct(self, obj):
-        return None       
+        prereqCheck = True
+        for prereq in obj.prereqs:
+            prereqCheck = boolFromSolverCheck(self.solver.check(simplify(prereq, blast_distinct=True)))
+            if prereqCheck == False:
+                print "ProofCheck >> Construction Failed - Could not meet: " + str(prereq) 
+                return False
+            
+        if len(obj.prereqs) > 0:
+            self.assumptions.append(obj.prereqs)
+            
+        for conclusion in obj.conclusions:
+            self.solver.add(conclusion)
+            self.conclusions.append(conclusion)
         
-    def assertTheorem(self, theorem):
-        
-        # # Declare objs to z3
-        for assumedObj in theorem.assumedObjects:
-            self.solver.check(assumedObj)
-        
-        # # AssertAssumptions    
-        for assumedProp in theorem.assumedProperties:
-            self.solver.check(assumedProp)
-        
-        
-        return None
-        
-    def hence(self, theorem):
-        return None
+        if isinstance(obj, Point):
+            self.points[obj.label] = obj
+        elif isinstance(obj, Line):
+            self.lines[obj.label] = obj
+        elif isinstance(obj, Circle):
+            self.circles[obj.label] = obj
+            
+        return True
     
-    def add(self, args):
-        return None
+            
     
-    
-    def printState(self):
-        print "==========\n" + \
-        "pts: " + str(self.points) + "\n" + \
-        "lines: " + str(self.lines) + "\n" + \
-        "circles: " + str(self.circles) + "\n" + \
-        "~~~\n" + \
+    def status(self):
+        return "~~~~~   \n" + \
+        "pts: " + str(self.points.keys()) + "\n" + \
+        "lines: " + str(self.lines.keys()) + "\n" + \
+        "circles: " + str(self.circles.keys()) + "\n" + \
+        "~\n" + \
         "assumptions: " + str(self.assumptions) + "\n" + \
-        "conclusions: " + str(self.conclusions) + "\n"
+        "conclusions: " + str(self.conclusions) + "\n~~~~~   \n"
         
     
 
@@ -63,9 +63,9 @@ class Theorem(object):
         This is a theorem in the language E.
     '''
     def __init__(self):
-        self.assumedObjects = sets.Set()
-        self.assumedProperties = sets.Set()
-        self.desiredObjects = sets.Set()
+        self.assumedObjects = []
+        self.assumedProperties = []
+        self.desiredObjects = []
         self.desiredConclusions = sets.Set()
     
     
@@ -107,25 +107,11 @@ class Point(object):
         self.prereqs = []
         self.conclusions = []
         self.z3Expr = Const(label, language.PointSort)
-        self.ctx_ref = solver.ctx
         if self.isDistinct:
             self.conclusions.append(Distinct(self.z3Expr))
     
-   
-    def construct(self, someSolver):
-        '''
-        Checks that all prerequisites are met in someSolver's context,
-        then asserts all of its conclusions to the z3 solver.
-        '''
-        print ">>Applying Construction Rule"
-        for obj in self.prereqs:
-            print ">>>Checking prereqs: " + str(obj)
-            someSolver.add(simplify(obj, blast_distinct=True)) 
-            print ">>> " + res(str(someSolver.check()))      
-        for obj in self.conclusions:
-            print ">>>Checking conclusions: " + str(obj)
-            someSolver.add(simplify(obj, blast_distinct=True))
-        
+    
+    
     
     def __str__(self, *args, **kwargs):
         return "|Point [" + str(self.z3Expr) + "] :\n" +\
@@ -192,17 +178,7 @@ class Line(object):
             self.conclusions.append(Distinct(self.z3Expr))
     
     
-    def construct(self, someSolver):
-        print ">>Applying Construction Rule"
-        for obj in self.prereqs:
-            print ">>>Checking prereqs: " + str(obj)
-            someSolver.add(simplify(obj, blast_distinct=True)) 
-            print ">>> " + res(str(someSolver.check()))      
-        for obj in self.conclusions:
-            print ">>>Checking conclusions: " + str(obj)
-            someSolver.add(simplify(obj, blast_distinct=True))
-
-    
+       
     def __str__(self, *args, **kwargs):
         return "|Line [" + str(self.z3Expr) + "] :\n" +\
                 "|   prereq: " + str(self.prereqs) + "\n" + \
@@ -230,17 +206,6 @@ class Circle(object):
         if self.isDistinct:
             self.conclusions.append(Distinct(self.z3Expr))
     
-    
-    def construct(self, someSolver):
-        print ">>Applying Construction Rule"
-        for obj in self.prereqs:
-            print ">>>Checking prereqs: " + str(obj)
-            someSolver.add(simplify(obj, blast_distinct=True)) 
-            print ">>> " + res(str(someSolver.check()))      
-        for obj in self.conclusions:
-            print ">>>Checking conclusions: " + str(obj)
-            someSolver.add(simplify(obj, blast_distinct=True))
-
     
     def __str__(self, *args, **kwargs):
         return "|Circle [" + str(self.z3Expr) + "] :\n" +\
@@ -726,6 +691,7 @@ class LanguageE(object):
         print "Axiom set : " + str(self.solver.check())
         
 
-res = lambda x: 'yes' if x == 'sat' else 'no'        
+yesNoFromSolverCheck = lambda x: 'yes' if x == 'sat' else 'no' 
+boolFromSolverCheck = lambda x: True if x == 'sat' else False       
 language = LanguageE()
 solver = language.solver
