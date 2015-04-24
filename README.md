@@ -18,19 +18,25 @@ Constructable objects have pre- and post- conditions associated with them.
 For example, constructing a line L through points a and b, has the pre-condition that a and b are distinct and the post-condition that a is on the line L and
 b is on the line L.
 
-Example:
-  To create a line between two points: 
-    a = Point("a")
-    b = Point("b")
-    L = Line("L")
-    L.through(a,b)
+Example:  To create a line between two points: 
+   
+a = Point("a")
+
+b = Point("b")
+
+L = Line("L")
+
+L.through(a,b)
 
 Once a constructable object is declared, it can be passed to the Proof class.
 
 Example:
   To construct L in proof (continuing from above examples:
+
     pc.construct(a)
+
     pc.construct(b)
+
     pc.construct(L)
 
 Note that a and b are "constructed" in the Proof before L. Because L's preconditions require a and b, this must be so. Otherwise, Proof will complain that preconditions are not met.
