@@ -1,7 +1,5 @@
-from z3 import Solver, DeclareSort, Function, BoolSort, RealSort, Const, Consts, \
-    ForAll, And, eq, Not, Implies, Or, RealVal, Context, Distinct, simplify, \
-    ExprRef, is_const
-import sets
+from z3 import *
+# import sets
 
 
 class LanguageE(object):
@@ -77,7 +75,7 @@ class LanguageE(object):
         '''
         Constructor
         '''
-        print "=== Initializing language EuclidZ3 ==="
+        print ("=== Initializing language EuclidZ3 ===")
         
         # # make sorts
         self.PointSort = DeclareSort("Point")
@@ -472,7 +470,7 @@ class LanguageE(object):
         self.solver = Solver()
         self.solver.add(self.axioms)
         
-        print "Axiom set : " + str(self.solver.check())
+        print ("Axiom set : " + str(self.solver.check()))
 
 class Proof(object):
     '''
@@ -487,7 +485,7 @@ class Proof(object):
         '''
         Constructor
         '''           
-        print "=== Initializing proof checker ==="
+        print ("=== Initializing proof checker ===")
         self.language = language
         self.solver = language.solver
         self.points = dict()
@@ -505,7 +503,7 @@ class Proof(object):
         '''
         result = self.points.get(point)
         if result == None:
-            print "ProofCheck >> No such point constructed"
+            print ("ProofCheck >> No such point constructed")
             return None
         return result   
     
@@ -518,7 +516,7 @@ class Proof(object):
         self.solver.add(expr)
         result = self.solver.check()
         if str(result) != 'sat':
-            print "ProofCheck >> Does not follow : " + str(expr)
+            print ("ProofCheck >> Does not follow : " + str(expr))
             self.solver.pop()
             return False
         
@@ -538,7 +536,7 @@ class Proof(object):
             self.solver.add(simplify(prereq, blast_distinct = True))
             prereqCheck = self.solver.check()
             if str(prereqCheck) != 'sat':
-                print "ProofCheck >> Construction Failed - Could not meet: " + str(prereq) 
+                print ("ProofCheck >> Construction Failed - Could not meet: " + str(prereq)) 
                 self.solver.pop()
                 return False
             

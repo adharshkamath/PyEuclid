@@ -1,4 +1,4 @@
-from z3 import Solver, Consts, Not, eq, Distinct, simplify, is_const, Exists
+from z3 import *
 from core import *
  
 
@@ -98,6 +98,13 @@ def test1():
     solver.push()
     solver.add(Not(language.SameSide(u,t,M)))
     print(">> Hence u and t are on opposite sides of M")
+    print("      << z3: " + str(solver.check()))
+    solver.pop()
+
+    ## unsatisfied
+    solver.push()
+    solver.add(Not(language.Segment(s,u) < language.Segment(s,t)))
+    print(">> Hence seg su is less than seg st")
     print("      << z3: " + str(solver.check()))
     solver.pop()
 
